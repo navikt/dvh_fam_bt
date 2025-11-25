@@ -1,12 +1,8 @@
-{{
-    config(
-        materialized='table'
-    )
-}}
+
 
 with mottaker as (
     select *
-    from {{ source('bt_statistikk_bank_dvh_fam_bt','stg_fak_statistikk_bank_mottaker') }}
+    from dvh_fam_bt.stg_fak_statistikk_bank_mottaker
     where barn_selv_mottaker_flagg = 0 --Barn selv mottar barnetrygd telles ikke
     and belop > 0 -- Etterbetalinger telles ikke
 )
@@ -14,7 +10,7 @@ with mottaker as (
 
 fylke as (
     select *
-    from {{ source('bt_statistikk_bank_dvh_fam_bt','dim_bt_navarende_fylke') }}
+    from dvh_fam_bt.dim_bt_navarende_fylke
 ),
 
 --Returnere en full liste med alle fylker og alle perioder. Dette er PX format spesifikk.
@@ -24,9 +20,9 @@ full_liste as (
        ,periode.aar_kvartal
        ,periode.forste_dato_i_perioden
        ,periode.siste_dato_i_perioden
-    from {{ source('bt_statistikk_bank_dvh_fam_bt','dim_bt_navarende_fylke') }} fylke
+    from dvh_fam_bt.dim_bt_navarende_fylke fylke
 
-    full outer join {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_periode') }} periode
+    full outer join dvh_fam_bt.dim_bt_periode periode
     on 1 = 1
 )
 ,
@@ -38,15 +34,16 @@ agg as (
        ,full_liste.nåværende_fylke_nr_navn
        ,full_liste.nåværende_fylkenavn
        ,full_liste.sortering as sortering_fylke
-       ,case when count(distinct mottaker.fk_person1) < 10 then
-                  round(count(distinct mottaker.fk_person1)+5, -1) --Prikking: Round antall mindre enn 5 oppover til nærmeste tier
-             else count(distinct mottaker.fk_person1)
-        end antall
+       --,case when count(distinct mottaker.fk_person1) < 10 then
+         --         round(count(distinct mottaker.fk_person1)+5, -1) --Prikking: Round antall mindre enn 5 oppover til nærmeste tier
+           --  else count(distinct mottaker.fk_person1)
+        --end antall
+       ,count(distinct mottaker.fk_person1) as antall
     from full_liste
 
     left outer join mottaker
     on full_liste.aar_kvartal = mottaker.aar_kvartal
-    and full_liste.nåværende_fylke_nr_navn = mottaker.nåværende_fylke_nr_navn
+    and full_liste.nåværende_fylke_nr = mottaker.navarende_fylke_nr
 
     where full_liste.nåværende_fylkenavn != 'I alt'
 
