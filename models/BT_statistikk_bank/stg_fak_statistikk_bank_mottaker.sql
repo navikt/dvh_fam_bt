@@ -1,22 +1,20 @@
 {{
     config(
-        materialized='incremental'
+        materialized='view'
     )
 }}
 
+--Tabellen inneholder navarende_kommune_nr for alle kommuner
 with geografi as (
     select
-        pk_dim_geografi
-       ,navarende_fylke_nr
-       ,gtverdi
-       ,gyldig_fra_dato
-       ,gyldig_til_dato
-       ,kommune_navn
-       ,fylke_nr
-    from {{ source('bt_statistikk_bank_dt_kodeverk', 'dim_geografi') }}
+        kommune_nr
+       ,max(navarende_kommune_nr) navarende_kommune_nr
+    from {{ source('bt_statistikk_bank_dt_kodeverk', 'dim_geografi_kommune') }}
+    group by kommune_nr --Kommune_nr fra tabellen er unik per i dag
 )
 ,
-
+--Hent ut mottaker for aktuell periode
+--Finn ut om mottaker er barn
 mottaker_periode as (
     select
         periode.aar
@@ -24,7 +22,6 @@ mottaker_periode as (
        ,periode.kvartal
        ,periode.kvartal_besk
        ,mottaker.*
-       ,dim_alder.alder as alder_dim_alder
        ,case when barn.fk_person1 is not null then 1 else 0 end barn_selv_mottaker_flagg
     from {{ source('bt_statistikk_bank_dvh_fam_bt', 'fam_bt_mottaker') }} mottaker
 
@@ -42,82 +39,30 @@ mottaker_periode as (
     join {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_periode') }} periode
     on mottaker.stat_aarmnd = to_char(periode.siste_dato_i_perioden, 'yyyymm') --Siste måned i kvartal
 
-    left join {{ source('bt_statistikk_bank_dt_kodeverk', 'dim_alder') }} dim_alder
-    on mottaker.fk_dim_alder = dim_alder.pk_dim_alder
-
     where ((mottaker.statusk != 4 and mottaker.stat_aarmnd <= 202212) --Publisert statistikk(nav.no) til og med 2022, har filtrert vekk Institusjon(statusk=4).
             or mottaker.stat_aarmnd >= 202301 --Statistikk fra og med 2023, inkluderer Institusjon.
           )
     and mottaker.gyldig_flagg = 1
 )
 ,
-
---Legg til fylkenr basert på fremmednøkkel til geografi
-mottaker_fylkenr as (
-    select
-        mottaker.*
-       ,geografi.navarende_fylke_nr
-       ,geografi.kommune_navn
-       ,geografi.fylke_nr
+--Hent ut bosted_kommune_nr på nytt basert på gt_verdi fra dim_person for mottaker som ikke har bosted_kommune_nr
+--Denne logikken gjelder stort sett for data fra Infotrygd
+mottaker_blank_bosted_kommunenr as (
+    select mottaker.*
+          ,case when dim_person.bosted_kommune_nr = '----' and dim_person.getitype in ('K', 'B') then substr(dim_person.gt_verdi, 1, 4)
+                else dim_person.bosted_kommune_nr
+           end bosted_kommune_nr_dim --Data fra Infotrygd har sannsynligvis ikke verdi på bosted_kommune_nr. Samme logikken ble allerede implementert i månedsprosessering for nye data.
+          ,dim_person.gt_verdi as gt_verdi_dim
     from mottaker_periode mottaker
 
-    left join geografi
-    on mottaker.fk_dim_geografi_bosted = geografi.pk_dim_geografi
+    join {{ source('bt_statistikk_bank_dt_person', 'dim_person') }} dim_person
+    on mottaker.fk_dim_person = dim_person.pk_dim_person
+
+    where mottaker.bosted_kommune_nr is null
 )
---select * from mottaker_geografi where kommune_navn = 'Lunner';
 ,
 
---Hent ut fylkenr basert på gtverdi for de som har Ukjent nåværende fylkenr etter forrige steg
-mottaker_ukjent_gtverdi as
-(
-    select
-        mottaker_fylkenr.fk_person1
-       ,mottaker_fylkenr.aar
-       ,mottaker_fylkenr.aar_kvartal
-       ,mottaker_fylkenr.kvartal
-       ,mottaker_fylkenr.kvartal_besk
-       ,mottaker_fylkenr.stat_aarmnd
-       ,mottaker_fylkenr.barn_selv_mottaker_flagg
-       ,coalesce(mottaker_fylkenr.alder_dim_alder, mottaker_fylkenr.alder) as alder --I tilfelle fk_dim_alder ikke finnes
-       ,mottaker_fylkenr.kjonn
-       ,mottaker_fylkenr.mottaker_gt_verdi
-       ,mottaker_fylkenr.belop
-
-       --Utvidet info
-       ,mottaker_fylkenr.statusk
-       ,mottaker_fylkenr.belop_utvidet
-       ,mottaker_fylkenr.belop_smabarnstillegg
-
-       ,dim_land.land_iso_3_kode
-       ,case when dim_land.land_iso_3_kode is not null then '98'
-             else gt_verdi.navarende_fylke_nr
-        end navarende_fylke_nr --Når det er landskode på gtverdi, tilhører det Utland(fylkenr=98)
-       ,gt_verdi.gtverdi
-    from mottaker_fylkenr
-
-    left outer join
-    (
-        select distinct land_iso_3_kode
-        from dt_kodeverk.dim_land
-    ) dim_land
-    on mottaker_fylkenr.mottaker_gt_verdi = dim_land.land_iso_3_kode
-
-    left join
-    (
-        select gtverdi
-              ,max(navarende_fylke_nr) keep (dense_rank first order by gyldig_fra_dato desc) navarende_fylke_nr
-        from geografi
-        group by gtverdi
-    ) gt_verdi
-    on mottaker_fylkenr.mottaker_gt_verdi = gt_verdi.gtverdi
-
-    where mottaker_fylkenr.navarende_fylke_nr = 'Ukjent'
-)
---select * from mottaker_ukjent_gtverdi;
-,
-
-mottaker_fylkenr_alle as
-(
+mottaker_bosted_kommunenr_alle as (
     select
         fk_person1
        ,aar
@@ -126,17 +71,18 @@ mottaker_fylkenr_alle as
        ,kvartal_besk
        ,stat_aarmnd
        ,barn_selv_mottaker_flagg
-       ,coalesce(alder_dim_alder, alder) as alder --I tilfelle fk_dim_alder ikke finnes
        ,kjonn
-       ,navarende_fylke_nr
+       ,fk_dim_alder
        ,belop
+       ,bosted_kommune_nr
+       ,mottaker_gt_verdi
 
        --Utvidet info
        ,statusk
        ,belop_utvidet
        ,belop_smabarnstillegg
-    from mottaker_fylkenr
-    where navarende_fylke_nr != 'Ukjent' or navarende_fylke_nr is null
+    from mottaker_periode
+    where bosted_kommune_nr is not null
 
     union all
     select
@@ -147,30 +93,50 @@ mottaker_fylkenr_alle as
        ,kvartal_besk
        ,stat_aarmnd
        ,barn_selv_mottaker_flagg
-       ,alder
        ,kjonn
-       ,navarende_fylke_nr
+       ,fk_dim_alder
        ,belop
+       ,bosted_kommune_nr_dim as bosted_kommune_nr
+       ,gt_verdi_dim as mottaker_gt_verdi
 
        --Utvidet info
        ,statusk
        ,belop_utvidet
        ,belop_smabarnstillegg
-    from mottaker_ukjent_gtverdi
+    from mottaker_blank_bosted_kommunenr
 )
---select * from mottaker_alle;
 ,
 
+--Hent ut nåværende kommunenr basert på bosted_kommune_nr
+mottaker_navarende_kommune_nr as (
+    select
+        mottaker.*
+       ,geografi.navarende_kommune_nr
+    from mottaker_bosted_kommunenr_alle mottaker
+
+    left join geografi
+    on mottaker.bosted_kommune_nr = geografi.kommune_nr
+)
+--select * from mottaker_geografi where kommune_navn = 'Lunner';
+,
+--Hent ut fylkenr fra de to første sifre av bosted_kommune_nr for numerisk bosted_kommune_nr
+--Sett fylkenr til 98(utland) for ikke numerisk bosted_kommune_nr og gt_verdi finnes i tabellen dim_land.land_iso_3_kode
+--Resten settes til 99(ukjent)
 mottaker_navarende_fylke as (
   select
       mottaker.*
-     ,fylke.nåværende_fylke_nr_navn
-     ,fylke.nåværende_fylke_nr
-     ,fylke.nåværende_fylkenavn
-  from mottaker_fylkenr_alle mottaker
+     ,case when (bosted_kommune_nr is null or not regexp_like(bosted_kommune_nr, '^[[:digit:]]+$')) and dim_land.land_iso_3_kode is not null then '98' --Når gtverdi peker på en landskode, settes det til Utland(fylkenr=98)
+           when (bosted_kommune_nr is not null and regexp_like(bosted_kommune_nr, '^[[:digit:]]+$')) then substr(navarende_kommune_nr,1,2)
+           else '99' --Ukjent
+      end navarende_fylke_nr
+  from mottaker_navarende_kommune_nr mottaker
 
-  left join {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_navarende_fylke') }} fylke
-  on fylke.nåværende_fylke_nr = coalesce(mottaker.navarende_fylke_nr, '99')
+  left outer join
+  (
+      select distinct land_iso_3_kode
+      from dt_kodeverk.dim_land
+  ) dim_land
+  on mottaker.mottaker_gt_verdi = dim_land.land_iso_3_kode
 )
 ,
 
@@ -179,16 +145,20 @@ navarende_fylke_kjonn_alder as (
     select
         mottaker.*
        ,kjonn.kjonn_besk
+       ,dim_alder.alder
        ,alder_gruppe.alder_gruppe_besk
 
     from mottaker_navarende_fylke mottaker
+
+    left join {{ source('bt_statistikk_bank_dt_kodeverk', 'dim_alder') }} dim_alder
+    on mottaker.fk_dim_alder = dim_alder.pk_dim_alder
 
     left join
     (
         select distinct alder_fra_og_med, alder_til_og_med, alder_gruppe_besk
         from {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_alder_gruppe') }}
     ) alder_gruppe
-    on mottaker.alder between alder_gruppe.alder_fra_og_med and alder_gruppe.alder_til_og_med
+    on dim_alder.alder between alder_gruppe.alder_fra_og_med and alder_gruppe.alder_til_og_med
 
     left join {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_kjonn') }} kjonn
     on mottaker.kjonn = kjonn.kjonn_kode

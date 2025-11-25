@@ -5,7 +5,7 @@ sources:
     schema: dvh_fam_bt
     description: 'Familie barnetrygd statistikk bank data'
     tables:
-      - name: fam_bt_mottaker
+      - name: fak_bt_mottaker
         description: 'Inneholder barnetrgyd månedlig mottaker data'
 
       - name: fam_bt_barn
@@ -38,6 +38,7 @@ sources:
       - name: dim_geografi
       - name: dim_kjonn
       - name: dim_alder
+      - name: dim_geografi_kommune
 
   - name: bt_statistikk_bank_dt_person
     schema: dt_person
