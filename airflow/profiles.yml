@@ -1,4 +1,4 @@
-dvh_fam_bt_dbt:
+dvh_fam_bt:
   target: dev
   outputs:
     dev:

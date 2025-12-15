@@ -1,4 +1,4 @@
-dvh_fam_bt_dbt:
+dvh_fam_bt:
   target: "{{env_var('DBT_DB_TARGET')}}"
   outputs:
     U:
@@ -9,6 +9,7 @@ dvh_fam_bt_dbt:
       host: dmv04-scan.adeo.no
       port: 1521
       service: ccdwhu1_ha
+      dbname: dwhu1      
       schema: "{{env_var('DBT_DB_SCHEMA')}}"
       threads: 10
       session_info:
@@ -23,6 +24,7 @@ dvh_fam_bt_dbt:
       host: dmv04-scan.adeo.no
       port: 1521
       service: dwhr_ha
+      dbname: dwhpr
       schema: "{{env_var('DBT_DB_SCHEMA')}}"
       threads: 10
       session_info:
@@ -37,6 +39,7 @@ dvh_fam_bt_dbt:
       host: dmv09-scan.adeo.no
       port: 1521
       service: dwh_ha
+      dbname: dwhpr
       schema: "{{env_var('DBT_DB_SCHEMA')}}"
       threads: 10
       session_info:
