@@ -14,7 +14,7 @@ dvh_fam_bt:
       threads: 10
       session_info:
         client_info: "{{env_var('DBT_ORCL_USER_PROXY', 'DVH_FAM_DBT')}}"
-        module: "{{env_var('AIRFLOW_DAG_ID', 'dvh_fam_bt_dbt')}}"
+        module: "{{env_var('AIRFLOW_DAG_ID', 'dvh_fam_bt')}}"
         action: "Kjører utpakking av barnetrygd data"
     R:
       type: oracle
@@ -29,7 +29,7 @@ dvh_fam_bt:
       threads: 10
       session_info:
         client_info: "{{env_var('DBT_ORCL_USER_PROXY', 'DVH_FAM_DBT')}}"
-        module: "{{env_var('AIRFLOW_DAG_ID', 'dvh_fam_bt_dbt')}}"
+        module: "{{env_var('AIRFLOW_DAG_ID', 'dvh_fam_bt')}}"
         action: "Kjører utpakking av barnetrygd data"
     P:
       type: oracle
@@ -44,7 +44,7 @@ dvh_fam_bt:
       threads: 10
       session_info:
         client_info: "{{env_var('DBT_ORCL_USER_PROXY', 'DVH_FAM_DBT')}}"
-        module: "{{env_var('AIRFLOW_DAG_ID', 'dvh_fam_bt_dbt')}}"
+        module: "{{env_var('AIRFLOW_DAG_ID', 'dvh_fam_bt')}}"
         action: "Kjører utpakking av barnetrygd data"
 config:
   send_anonymous_usage_stats: False
