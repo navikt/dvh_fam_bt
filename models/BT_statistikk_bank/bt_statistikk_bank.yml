@@ -5,11 +5,11 @@ sources:
     schema: dvh_fam_bt
     description: 'Familie barnetrygd statistikk bank data'
     tables:
-      - name: fam_bt_mottaker
+      - name: fak_bt_mottaker
         description: 'Inneholder barnetrgyd månedlig mottaker data'
 
       - name: fam_bt_barn
-        description: 'Inneholder barnetrgyd barn data'
+        description: 'Inneholder barnetrgyd månedlig barn data'
 
       - name: dim_bt_alder_gruppe
         description: 'Inneholder alders gruppe til barnetrygd statistikkbank'
@@ -21,9 +21,13 @@ sources:
         description: 'Inneholder periode til barnetrygd statistikkbank'
 
       - name: dim_bt_navarende_fylke
-        description: 'Aggregert statistikk for statistikkbank'
+        description: 'Inneholder nåværende fylkesliste til barnetrygd statistikkbank'
 
-      - name: agg_statistikk_bank_kjonn_alder_fylke
+      - name: stg_fak_statistikk_bank_mottaker
+        description: 'Inneholder mottaker data til barnetrygd statistikkbank'
+
+      - name: stg_fak_statistikk_bank_barn
+        description: 'Inneholder barn data til barnetrygd statistikkbank'
 
   - name: bt_statistikk_bank_dt_kodeverk
     schema: dt_kodeverk
@@ -33,3 +37,11 @@ sources:
       - name: dim_geografi_fylke
       - name: dim_geografi
       - name: dim_kjonn
+      - name: dim_alder
+      - name: dim_geografi_kommune
+
+  - name: bt_statistikk_bank_dt_person
+    schema: dt_person
+    description: 'Dimensjons data'
+    tables:
+      - name: dim_person
