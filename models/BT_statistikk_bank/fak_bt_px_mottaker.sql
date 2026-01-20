@@ -36,7 +36,7 @@ mottaker_periode as (
     on mottaker.fk_person1 = barn.fk_person1
     and mottaker.stat_aarmnd = barn.stat_aarmnd
 
-    join {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_periode') }} periode
+    join {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_px_periode') }} periode
     on mottaker.stat_aarmnd = to_char(periode.siste_dato_i_perioden, 'yyyymm') --Siste måned i kvartal
 
     where ((mottaker.statusk != 4 and mottaker.stat_aarmnd <= 202212) --Publisert statistikk(nav.no) til og med 2022, har filtrert vekk Institusjon(statusk=4).
@@ -156,11 +156,11 @@ navarende_fylke_kjonn_alder as (
     left join
     (
         select distinct alder_fra_og_med, alder_til_og_med, alder_gruppe_besk
-        from {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_alder_gruppe') }}
+        from {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_px_alder_gruppe') }}
     ) alder_gruppe
     on dim_alder.alder between alder_gruppe.alder_fra_og_med and alder_gruppe.alder_til_og_med
 
-    left join {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_kjonn') }} kjonn
+    left join {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_px_kjonn') }} kjonn
     on mottaker.kjonn = kjonn.kjonn_kode
 )
 select *

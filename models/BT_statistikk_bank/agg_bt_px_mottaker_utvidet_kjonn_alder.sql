@@ -6,7 +6,7 @@
 
 with mottaker as (
     select *
-    from {{ source('bt_statistikk_bank_dvh_fam_bt','stg_fak_statistikk_bank_mottaker') }}
+    from {{ source('bt_statistikk_bank_dvh_fam_bt','fak_bt_px_mottaker') }}
     where belop_utvidet > 0 --Etterbetalt telles ikke
 )
 ,
