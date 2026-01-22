@@ -29,6 +29,8 @@ sources:
       - name: fak_bt_px_barn
         description: 'Inneholder barn data til barnetrygd statistikkbank'
 
+      - name: dim_bt_kjonn
+
   - name: bt_statistikk_bank_dt_kodeverk
     schema: dt_kodeverk
     description: 'Dimensjons data'
