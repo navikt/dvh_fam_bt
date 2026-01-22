@@ -30,6 +30,7 @@ sources:
         description: 'Inneholder barn data til barnetrygd statistikkbank'
 
       - name: dim_bt_kjonn
+      - name: dim_bt_periode
 
   - name: bt_statistikk_bank_dt_kodeverk
     schema: dt_kodeverk
