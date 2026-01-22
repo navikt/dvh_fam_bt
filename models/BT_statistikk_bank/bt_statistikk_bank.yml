@@ -8,7 +8,7 @@ sources:
       - name: fak_bt_mottaker
         description: 'Inneholder barnetrgyd månedlig mottaker data'
 
-      - name: fam_bt_barn
+      - name: fak_bt_barn
         description: 'Inneholder barnetrgyd månedlig barn data'
 
       - name: dim_bt_px_alder_gruppe
@@ -28,9 +28,6 @@ sources:
 
       - name: fak_bt_px_barn
         description: 'Inneholder barn data til barnetrygd statistikkbank'
-
-      - name: dim_bt_kjonn
-      - name: dim_bt_periode
 
   - name: bt_statistikk_bank_dt_kodeverk
     schema: dt_kodeverk

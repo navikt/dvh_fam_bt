@@ -23,14 +23,13 @@ mottaker_periode as (
        ,periode.kvartal_besk
        ,mottaker.*
        ,case when barn.fk_person1 is not null then 1 else 0 end barn_selv_mottaker_flagg
-    from {{ source('bt_statistikk_bank_dvh_fam_bt', 'fam_bt_mottaker') }} mottaker
+    from {{ source('bt_statistikk_bank_dvh_fam_bt', 'fak_bt_mottaker') }} mottaker
 
     left join
     (
         select stat_aarmnd, fk_person1
-        from {{ source('bt_statistikk_bank_dvh_fam_bt', 'fam_bt_barn') }}
-        where gyldig_flagg = 1
-        and fk_person1 = fkb_person1 --Barn selv er mottaker
+        from {{ source('bt_statistikk_bank_dvh_fam_bt', 'fak_bt_barn') }}
+        where fk_person1 = fkb_person1 --Barn selv er mottaker
         group by stat_aarmnd, fk_person1
     ) barn
     on mottaker.fk_person1 = barn.fk_person1
@@ -42,11 +41,10 @@ mottaker_periode as (
     where ((mottaker.statusk != 4 and mottaker.stat_aarmnd <= 202212) --Publisert statistikk(nav.no) til og med 2022, har filtrert vekk Institusjon(statusk=4).
             or mottaker.stat_aarmnd >= 202301 --Statistikk fra og med 2023, inkluderer Institusjon.
           )
-    and mottaker.gyldig_flagg = 1
 )
 ,
 --Hent ut bosted_kommune_nr på nytt basert på gt_verdi fra dim_person for mottaker som ikke har bosted_kommune_nr
---Denne logikken gjelder stort sett for data fra Infotrygd
+--Denne logikken gjelder hovedsakelig for data fra Infotrygd
 mottaker_blank_bosted_kommunenr as (
     select mottaker.*
           ,case when dim_person.bosted_kommune_nr = '----' and dim_person.getitype in ('K', 'B') then substr(dim_person.gt_verdi, 1, 4)
@@ -75,7 +73,7 @@ mottaker_bosted_kommunenr_alle as (
        ,fk_dim_alder
        ,belop
        ,bosted_kommune_nr
-       ,mottaker_gt_verdi
+       ,dim_gt_verdi as mottaker_gt_verdi
 
        --Utvidet info
        ,statusk
@@ -125,7 +123,7 @@ mottaker_navarende_kommune_nr as (
 mottaker_navarende_fylke as (
   select
       mottaker.*
-     ,case when (bosted_kommune_nr is null or not regexp_like(bosted_kommune_nr, '^[[:digit:]]+$')) and dim_land.land_iso_3_kode is not null then '98' --Når gtverdi peker på en landskode, settes det til Utland(fylkenr=98)
+     ,case when (bosted_kommune_nr is null or not regexp_like(bosted_kommune_nr, '^[[:digit:]]+$')) and dim_land.land_iso_3_kode is not null then '98' --Når gtverdi peker på en landskode, setter det til Utland(fylkenr=98)
            when (bosted_kommune_nr is not null and regexp_like(bosted_kommune_nr, '^[[:digit:]]+$')) then substr(navarende_kommune_nr,1,2)
            else '99' --Ukjent
       end navarende_fylke_nr
@@ -141,6 +139,8 @@ mottaker_navarende_fylke as (
 ,
 
 --Legg til kjønn og alder
+--Bruk inner join mot alder, kjønn og fylke for å beholde rad som har full info.
+  --Hensikten er å holde likt totalt antall for ulike statistikk.
 navarende_fylke_kjonn_alder as (
     select
         mottaker.*
@@ -150,18 +150,21 @@ navarende_fylke_kjonn_alder as (
 
     from mottaker_navarende_fylke mottaker
 
-    left join {{ source('bt_statistikk_bank_dt_kodeverk', 'dim_alder') }} dim_alder
+    join {{ source('bt_statistikk_bank_dt_kodeverk', 'dim_alder') }} dim_alder
     on mottaker.fk_dim_alder = dim_alder.pk_dim_alder
 
-    left join
+    join
     (
         select distinct alder_fra_og_med, alder_til_og_med, alder_gruppe_besk
         from {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_px_alder_gruppe') }}
     ) alder_gruppe
     on dim_alder.alder between alder_gruppe.alder_fra_og_med and alder_gruppe.alder_til_og_med
 
-    left join {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_px_kjonn') }} kjonn
+    join {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_px_kjonn') }} kjonn
     on mottaker.kjonn = kjonn.kjonn_kode
+
+    join {{ source('bt_statistikk_bank_dvh_fam_bt','dim_bt_px_navarende_fylke') }} fylke
+    on mottaker.navarende_fylke_nr = fylke.nåværende_fylke_nr
 )
 select *
 from navarende_fylke_kjonn_alder

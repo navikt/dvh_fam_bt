@@ -17,7 +17,8 @@ with geografi as (
 )
 ,
 
---Ekskludere barn som selv mottar barnetrygd
+--Hent ut barn for aktuell periode
+--Finn ut om mottaker er barn
 barn_periode as (
     select
         barn.stat_aarmnd
@@ -28,12 +29,10 @@ barn_periode as (
        ,periode.kvartal
        ,periode.kvartal_besk
        ,max(case when barn.fkb_person1 = barn.fk_person1 then 1 else 0 end) as barn_selv_mottaker_flagg
-    from {{ source('bt_statistikk_bank_dvh_fam_bt', 'fam_bt_barn') }} barn
+    from {{ source('bt_statistikk_bank_dvh_fam_bt', 'fak_bt_barn') }} barn
 
-    join {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_periode') }} periode
+    join {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_px_periode') }} periode
     on barn.stat_aarmnd = to_char(periode.siste_dato_i_perioden, 'yyyymm') --Siste måned i kvartal
-
-    where barn.gyldig_flagg = 1
 
     group by
         barn.stat_aarmnd
@@ -43,6 +42,31 @@ barn_periode as (
        ,periode.aar_kvartal
        ,periode.kvartal
        ,periode.kvartal_besk
+)
+,
+--Hent ut bosted_kommune_nr på nytt basert på gt_verdi fra dim_person for mottaker som ikke har bosted_kommune_nr
+--Denne logikken gjelder hovedsakelig for data fra Infotrygd
+mottaker_blank_bosted_kommunenr as (
+    select barn.*
+          ,case when dim_person.bosted_kommune_nr = '----' and dim_person.getitype in ('K', 'B') then substr(dim_person.gt_verdi, 1, 4)
+                else dim_person.bosted_kommune_nr
+           end bosted_kommune_nr_dim --Data fra Infotrygd har sannsynligvis ikke verdi på bosted_kommune_nr. Samme logikken ble allerede implementert i månedsprosessering for nye data.
+          ,dim_person.gt_verdi as gt_verdi_dim
+    from barn_periode barn
+
+    join {{ source('bt_statistikk_bank_dt_person', 'dim_person') }} dim_person
+    on barn.fk_dim_person_mottaker = dim_person.pk_dim_person
+
+    join
+    (
+        select stat_aarmnd, fk_person1, max(bosted_kommune_nr) as bosted_kommune_nr
+        from {{ source('bt_statistikk_bank_dvh_fam_bt', 'fak_bt_mottaker') }}
+        group by stat_aarmnd, fk_person1
+    ) mottaker
+    on barn.stat_aarmnd = mottaker.stat_aarmnd
+    and barn.fk_person1 = mottaker.fk_person1
+
+    where mottaker.bosted_kommune_nr is null
 )
 ,
 
@@ -141,7 +165,7 @@ barn_navarende_fylke as (
      ,fylke.nåværende_fylkenavn
   from barn_fylkenr_alle barn
 
-  left join {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_navarende_fylke') }} fylke
+  left join {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_px_navarende_fylke') }} fylke
   on fylke.nåværende_fylke_nr = coalesce(barn.navarende_fylke_nr, '99')
 )
 

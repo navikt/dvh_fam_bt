@@ -10,6 +10,7 @@ select
    ,case when kjonn_flertall_besk = 'Menn' then 1
          when kjonn_flertall_besk = 'Kvinner' then 2
     end sortering
+from {{ source('bt_statistikk_bank_dt_kodeverk', 'dim_kjonn') }}
 where kjonn_flertall_besk in ('Kvinner','Menn')
 
 union all

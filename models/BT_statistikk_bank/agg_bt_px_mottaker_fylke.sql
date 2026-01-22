@@ -11,12 +11,6 @@ with mottaker as (
     and belop > 0 -- Etterbetalinger telles ikke
 )
 ,
-
-fylke as (
-    select *
-    from dvh_fam_bt.dim_bt_navarende_fylke
-),
-
 --Returnere en full liste med alle fylker og alle perioder. Dette er PX format spesifikk.
 full_liste as (
     select
@@ -24,9 +18,9 @@ full_liste as (
        ,periode.aar_kvartal
        ,periode.forste_dato_i_perioden
        ,periode.siste_dato_i_perioden
-    from dvh_fam_bt.dim_bt_navarende_fylke fylke
+    from {{ source('bt_statistikk_bank_dvh_fam_bt','dim_bt_px_navarende_fylke') }} fylke
 
-    full outer join dvh_fam_bt.dim_bt_periode periode
+    full outer join {{ source('bt_statistikk_bank_dvh_fam_bt','dim_bt_px_periode') }} periode
     on 1 = 1
 )
 ,
