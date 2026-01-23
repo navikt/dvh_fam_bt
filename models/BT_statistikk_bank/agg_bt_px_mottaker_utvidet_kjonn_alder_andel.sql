@@ -23,7 +23,7 @@ full_liste as (
        ,periode.aar_kvartal
        ,periode.forste_dato_i_perioden
        ,periode.siste_dato_i_perioden
-    from {{ source('bt_statistikk_bank_dvh_fam_bt','dim_bt_px_kjonn') }} kjonn
+    from {{ ref('dim_bt_px_kjonn') }} kjonn
 
     full outer join
     (
@@ -31,12 +31,12 @@ full_liste as (
               ,min(alder_fra_og_med) as alder_fra_og_med
               ,max(alder_til_og_med) as alder_til_og_med
               ,min(sortering) as sortering
-        from {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_px_alder_gruppe') }}
+        from {{ ref('dim_bt_px_alder_gruppe') }}
         group by utvidet_alder_gruppe_besk
     ) alder_gruppe
     on 1 = 1
 
-    full outer join {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_px_periode') }} periode
+    full outer join {{ ref('dim_bt_px_periode') }} periode
     on 1 = 1
 )
 ,
@@ -57,7 +57,7 @@ alle as (
             alder_gruppe_besk as alder_gruppe_besk
            ,min(alder_fra_og_med) as alder_fra_og_med
            ,max(alder_til_og_med) as alder_til_og_med
-        from {{ source('bt_statistikk_bank_dvh_fam_bt', 'dim_bt_px_alder_gruppe') }}
+        from {{ ref('dim_bt_px_alder_gruppe') }}
         group by alder_gruppe_besk
     ) alder_gruppe
     on mottaker.aldersgruppe = alder_gruppe.alder_gruppe_besk

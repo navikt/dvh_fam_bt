@@ -6,7 +6,7 @@
 
 with mottaker as (
     select *
-    from {{ source('bt_statistikk_bank_dvh_fam_bt','fak_bt_px_mottaker') }}
+    from {{ ref('fak_bt_px_mottaker') }}
     where barn_selv_mottaker_flagg = 0 --Barn selv mottar barnetrygd telles ikke
     and belop > 0 -- Etterbetalinger telles ikke
 )
@@ -18,9 +18,9 @@ full_liste as (
        ,periode.aar_kvartal
        ,periode.forste_dato_i_perioden
        ,periode.siste_dato_i_perioden
-    from {{ source('bt_statistikk_bank_dvh_fam_bt','dim_bt_px_navarende_fylke') }} fylke
+    from {{ ref('dim_bt_px_navarende_fylke') }} fylke
 
-    full outer join {{ source('bt_statistikk_bank_dvh_fam_bt','dim_bt_px_periode') }} periode
+    full outer join {{ ref('dim_bt_px_periode') }} periode
     on 1 = 1
 )
 ,
