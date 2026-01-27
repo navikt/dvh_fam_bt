@@ -23,12 +23,6 @@ sources:
       - name: dim_bt_px_navarende_fylke
         description: 'Inneholder nåværende fylkesliste til barnetrygd statistikkbank'
 
-      - name: fak_bt_px_mottaker
-        description: 'Inneholder mottaker data til barnetrygd statistikkbank'
-
-      - name: fak_bt_px_barn
-        description: 'Inneholder barn data til barnetrygd statistikkbank'
-
   - name: bt_statistikk_bank_dt_kodeverk
     schema: dt_kodeverk
     description: 'Dimensjons data'
@@ -45,3 +39,47 @@ sources:
     description: 'Dimensjons data'
     tables:
       - name: dim_person
+
+models:
+  - name: dim_bt_px_alder_gruppe
+    config:
+      tags: "Statistikk_bank"
+
+  - name: dim_bt_px_kjonn
+    config:
+      tags: "Statistikk_bank"
+
+  - name: dim_bt_px_navarende_fylke
+    config:
+      tags: "Statistikk_bank"
+
+  - name: dim_bt_px_periode
+    config:
+      tags: "Statistikk_bank"
+
+  - name: fak_bt_px_barn
+    config:
+      tags: "Statistikk_bank"
+
+  - name: fak_bt_px_mottaker
+    config:
+      tags: "Statistikk_bank"
+
+  - name: agg_bt_px_barn_fylke
+    config:
+      tags: "Statistikk_bank"
+
+  - name: agg_bt_px_mottaker_fylke
+    config:
+      tags: "Statistikk_bank"
+  - name: agg_bt_px_mottaker_kjonn_alder
+    config:
+      tags: "Statistikk_bank"
+
+  - name: agg_bt_px_mottaker_utvidet_kjonn_alder
+    config:
+      tags: "Statistikk_bank"
+
+  - name: agg_bt_px_mottaker_utvidet_kjonn_alder_andel
+    config:
+      tags: "Statistikk_bank"

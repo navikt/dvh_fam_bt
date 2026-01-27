@@ -1,6 +1,7 @@
 {{
     config(
-        materialized='view'
+        materialized='view',
+        tags="Dimensjon_bank"
     )
 }}
 
