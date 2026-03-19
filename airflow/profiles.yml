@@ -11,6 +11,7 @@ dvh_fam_bt:
       service: "{{env_var('DBT_ORCL_SERVICE')}}"
       schema: "{{env_var('DBT_ORCL_SCHEMA')}}"
       threads: 8
+      database: "{{env_var('DBT_ORCL_DB')}}"
   session_info:
     client_info: "{{env_var('DBT_ORCL_USER_PROXY', 'DVH_FAM_DBT')}}"
     module: "{{env_var('AIRFLOW_DAG_ID', 'dvh_fam_bt_dbt')}}"
