@@ -10,7 +10,7 @@ from google.cloud import secretmanager
 import shlex
 
 
-DBT_PROJECT = 'dvh_fam_bb'
+DBT_PROJECT = 'dvh_fam_bt'
 
 def set_secrets_as_envs():
   secrets = secretmanager.SecretManagerServiceClient()
