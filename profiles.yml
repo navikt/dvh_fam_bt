@@ -1,50 +1,16 @@
 dvh_fam_bt:
   target: "{{env_var('DBT_DB_TARGET')}}"
   outputs:
-    U:
+    knast:
+      host: "{{env_var('DBT_DB_HOST')}}"
+      password: placeholder
+      port: "{{env_var('DBT_DB_PORT')}}"
+      protocol: tcp
+      schema: dvh_fam_ungdom
+      service: "{{env_var('DBT_ENV_SERVICE')}}"
+      database: "{{env_var('DBT_DB_NAME')}}"
+      threads: 8
       type: oracle
       user: "{{env_var('DBT_ENV_SECRET_USER')}}"
-      pass: "{{env_var('DBT_ENV_SECRET_PASS')}}"
-      protocol: tcp
-      host: dmv04-scan.adeo.no
-      port: 1521
-      service: ccdwhu1_ha
-      dbname: dwhu1      
-      schema: "{{env_var('DBT_DB_SCHEMA')}}"
-      threads: 10
-      session_info:
-        client_info: "{{env_var('DBT_ORCL_USER_PROXY', 'DVH_FAM_DBT')}}"
-        module: "{{env_var('AIRFLOW_DAG_ID', 'dvh_fam_bt')}}"
-        action: "Kjører utpakking av barnetrygd data"
-    R:
-      type: oracle
-      user: "{{env_var('DBT_ENV_SECRET_USER')}}"
-      pass: "{{env_var('DBT_ENV_SECRET_PASS')}}"
-      protocol: tcp
-      host: dmv04-scan.adeo.no
-      port: 1521
-      service: dwhr_ha
-      dbname: dwhpr
-      schema: "{{env_var('DBT_DB_SCHEMA')}}"
-      threads: 10
-      session_info:
-        client_info: "{{env_var('DBT_ORCL_USER_PROXY', 'DVH_FAM_DBT')}}"
-        module: "{{env_var('AIRFLOW_DAG_ID', 'dvh_fam_bt')}}"
-        action: "Kjører utpakking av barnetrygd data"
-    P:
-      type: oracle
-      user: "{{env_var('DBT_ENV_SECRET_USER')}}"
-      pass: "{{env_var('DBT_ENV_SECRET_PASS')}}"
-      protocol: tcp
-      host: dmv09-scan.adeo.no
-      port: 1521
-      service: dwh_ha
-      dbname: dwhpr
-      schema: "{{env_var('DBT_DB_SCHEMA')}}"
-      threads: 10
-      session_info:
-        client_info: "{{env_var('DBT_ORCL_USER_PROXY', 'DVH_FAM_DBT')}}"
-        module: "{{env_var('AIRFLOW_DAG_ID', 'dvh_fam_bt')}}"
-        action: "Kjører utpakking av barnetrygd data"
 config:
   send_anonymous_usage_stats: False
